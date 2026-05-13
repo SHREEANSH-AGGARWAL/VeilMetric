@@ -1,5 +1,6 @@
 # can also use only dirchlet distribution to make profiles
-# but going by archetype is preferred here
+# but going by archetype is preferred here to account for exterme cases as well 
+
 
 import pandas as pd 
 import numpy as np
