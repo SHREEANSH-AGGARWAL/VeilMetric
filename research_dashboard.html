@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VeilMetric — Dual-Engine Research Dashboard</title>
+<meta name="description" content="FHE-encrypted portfolio risk analytics comparing Plaintext XGBoost vs Concrete-ML predictions">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Syne:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#070a12;--bg2:#0d1120;--bg3:#151929;--bg4:#1c2038;
+  --border:rgba(255,255,255,0.07);--glow:rgba(0,212,160,0.15);
+  --teal:#00d4a0;--purple:#a78bfa;--amber:#f5a623;--coral:#ff6b6b;--blue:#5b8dee;
+  --txt:#e8eaf0;--txt2:#8b90a0;--txt3:#5a5f70;
+  --mono:'IBM Plex Mono',monospace;--sans:'Inter',sans-serif;--disp:'Syne',sans-serif;
+  --glass:rgba(13,17,32,0.7);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--txt);font-family:var(--sans);display:flex;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;
+  background:radial-gradient(ellipse at 20% 50%,rgba(0,212,160,0.03) 0%,transparent 50%),
+  radial-gradient(ellipse at 80% 20%,rgba(167,139,250,0.03) 0%,transparent 50%),
+  radial-gradient(ellipse at 50% 80%,rgba(91,141,238,0.02) 0%,transparent 50%);
+  animation:meshDrift 20s ease-in-out infinite alternate;z-index:0;pointer-events:none}
+@keyframes meshDrift{0%{transform:translate(0,0) rotate(0deg)}100%{transform:translate(2%,-2%) rotate(3deg)}}
+aside{position:sticky;top:0;width:310px;height:100vh;background:var(--bg2);border-right:1px solid var(--border);
+  padding:1.5rem;flex-shrink:0;display:flex;flex-direction:column;gap:0.8rem;z-index:10;overflow-y:auto}
+aside h1{font-family:var(--disp);font-size:1.5rem;color:var(--teal);display:flex;align-items:center;gap:0.5rem}
+aside h1 .lock{font-size:1rem;opacity:0.7}
+aside .sub{font-family:var(--mono);font-size:0.68rem;color:var(--txt3)}
+aside .badge{display:inline-block;font-family:var(--mono);font-size:0.6rem;padding:2px 8px;
+  border:1px solid var(--purple);color:var(--purple);border-radius:20px;letter-spacing:1px}
+.divider{height:1px;background:var(--border);margin:0.3rem 0}
+label{display:block;font-family:var(--mono);font-size:0.72rem;color:var(--txt2);margin-bottom:0.2rem}
+input[type="number"]{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--txt);
+  padding:0.55rem 0.8rem;border-radius:6px;font-family:var(--mono);font-size:0.85rem;
+  transition:border-color 0.2s,box-shadow 0.2s;margin-bottom:0.5rem}
+input[type="number"]:focus{outline:none;border-color:var(--teal);box-shadow:0 0 12px var(--glow)}
+#sum-warn{font-family:var(--mono);font-size:0.68rem;color:var(--amber);min-height:0.9rem}
+#run-btn{width:100%;padding:0.85rem;background:linear-gradient(135deg,var(--teal),#00b89c);color:#000;
+  font-family:var(--disp);font-weight:700;font-size:0.95rem;border:none;border-radius:8px;cursor:pointer;
+  transition:transform 0.2s,box-shadow 0.2s;position:relative;overflow:hidden}
+#run-btn:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,212,160,0.25)}
+#run-btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;box-shadow:none}
+#run-btn .shimmer{position:absolute;top:0;left:-100%;width:100%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);
+  animation:shimmer 2s infinite}
+@keyframes shimmer{100%{left:100%}}
+#status{font-family:var(--mono);font-size:0.7rem;color:var(--txt2);text-align:center;min-height:1rem}
+.about-link{font-family:var(--mono);font-size:0.7rem;color:var(--purple);cursor:pointer;
+  text-align:center;opacity:0.7;transition:opacity 0.2s;margin-top:auto}
+.about-link:hover{opacity:1}
+main{flex:1;padding:2rem 2.5rem;position:relative;z-index:1;overflow-y:auto}
+main h2{font-family:var(--disp);font-size:1.8rem;margin-bottom:0.3rem}
+main .tagline{font-family:var(--mono);font-size:0.78rem;color:var(--txt2);margin-bottom:2rem}
+#empty-state{display:flex;align-items:center;justify-content:center;height:60vh;flex-direction:column;gap:1rem;opacity:0.35}
+#empty-state h3{font-family:var(--disp);font-size:1.3rem}
+#empty-state p{font-family:var(--mono);font-size:0.8rem;color:var(--txt2)}
+#loading-overlay{display:none;position:fixed;inset:0;background:rgba(7,10,18,0.88);z-index:100;
+  flex-direction:column;align-items:center;justify-content:center;gap:1.5rem;backdrop-filter:blur(6px)}
+#loading-overlay.active{display:flex}
+.loader-ring{width:64px;height:64px;border:3px solid var(--border);border-top-color:var(--teal);
+  border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loader-steps{display:flex;flex-direction:column;gap:0.6rem;font-family:var(--mono);font-size:0.78rem}
+.loader-step{color:var(--txt3);transition:color 0.3s}
+.loader-step.active{color:var(--amber)}
+.loader-step.done{color:var(--teal)}
+.loader-step .check{display:none}.loader-step.done .check{display:inline}
+.loader-step .dot{display:inline}.loader-step.done .dot{display:none}
+#results{display:none;flex-direction:column;gap:2.5rem}
+.section-title{font-family:var(--mono);font-size:0.68rem;text-transform:uppercase;letter-spacing:2px;
+  color:var(--txt2);margin-bottom:1rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border)}
+.reveal{opacity:0;transform:translateY(20px);transition:opacity 0.5s ease,transform 0.5s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+.dual-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:0.88rem;
+  background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.dual-table th{text-align:left;padding:0.7rem 1.2rem;color:var(--txt3);font-weight:400;font-size:0.72rem;
+  text-transform:uppercase;letter-spacing:1px;background:var(--bg3)}
+.dual-table td{padding:0.8rem 1.2rem;border-top:1px solid var(--border)}
+.val-std{color:var(--teal);font-weight:600}.val-fhe{color:var(--purple);font-weight:600}
+.delta-pos{color:var(--teal);font-size:0.75rem}.delta-neg{color:var(--coral);font-size:0.75rem}
+.analytics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
+.card{background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:1.2rem;
+  backdrop-filter:blur(8px);transition:border-color 0.3s,transform 0.2s}
+.card:hover{border-color:rgba(255,255,255,0.15);transform:translateY(-2px)}
+.card .card-label{font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;letter-spacing:1px;
+  color:var(--txt3);margin-bottom:0.5rem;display:flex;align-items:center;gap:0.4rem}
+.card .card-std{font-family:var(--disp);font-size:1.6rem}
+.card .card-fhe{font-family:var(--mono);font-size:0.78rem;color:var(--purple);margin-top:0.3rem}
+.card .card-sub{font-family:var(--sans);font-size:0.7rem;color:var(--txt3);margin-top:0.35rem;line-height:1.4}
+.c-teal{color:var(--teal)}.c-purple{color:var(--purple)}.c-coral{color:var(--coral)}
+.c-blue{color:var(--blue)}.c-amber{color:var(--amber)}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+.chart-box{background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:1.2rem;
+  backdrop-filter:blur(8px)}
+.chart-box .chart-title{font-family:var(--mono);font-size:0.68rem;color:var(--txt3);
+  text-transform:uppercase;letter-spacing:1px;margin-bottom:1rem}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(7,10,18,0.9);z-index:200;
+  align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-overlay.active{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:2.5rem;
+  max-width:720px;width:90%;max-height:85vh;overflow-y:auto;position:relative}
+.modal h2{font-family:var(--disp);font-size:1.6rem;color:var(--teal);margin-bottom:1rem}
+.modal h3{font-family:var(--disp);font-size:1.1rem;color:var(--purple);margin:1.5rem 0 0.5rem}
+.modal p{font-family:var(--sans);font-size:0.88rem;color:var(--txt2);line-height:1.7;margin-bottom:0.8rem}
+.modal .close-btn{position:absolute;top:1rem;right:1.2rem;background:none;border:none;color:var(--txt2);
+  font-size:1.5rem;cursor:pointer;width:auto;padding:0.3rem}
+.modal .close-btn:hover{color:var(--txt)}
+.modal .term{color:var(--teal);font-weight:600}
+.modal .term-p{color:var(--purple);font-weight:600}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+<div id="loading-overlay">
+  <div class="loader-ring"></div>
+  <div class="loader-steps">
+    <div class="loader-step" id="ls-1"><span class="dot">○</span><span class="check">✓</span> Fetching live Nifty 50 market data...</div>
+    <div class="loader-step" id="ls-2"><span class="dot">○</span><span class="check">✓</span> Running Plaintext XGBoost (3 agents)...</div>
+    <div class="loader-step" id="ls-3"><span class="dot">○</span><span class="check">✓</span> Encrypting data with FHE keys...</div>
+    <div class="loader-step" id="ls-4"><span class="dot">○</span><span class="check">✓</span> Running encrypted inference on server...</div>
+    <div class="loader-step" id="ls-5"><span class="dot">○</span><span class="check">✓</span> Decrypting results & computing analytics...</div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="about-modal">
+  <div class="modal">
+    <button class="close-btn" onclick="document.getElementById('about-modal').classList.remove('active')">&times;</button>
+    <h2>What is VeilMetric?</h2>
+    <p>VeilMetric is a <span class="term">research project</span> that predicts your portfolio's future performance using machine learning — and then does the <em>exact same thing</em> on <span class="term-p">encrypted data</span>, so your financial information is never exposed.</p>
+    <h3>The Two Engines</h3>
+    <p><span class="term">Plaintext XGBoost</span> — A standard ML model that sees your raw portfolio weights. Fast and accurate, but requires trust in the server.</p>
+    <p><span class="term-p">FHE XGBoost (Concrete-ML)</span> — The same model, but running on <em>encrypted</em> data using Fully Homomorphic Encryption by Zama. The server <strong>never sees your actual numbers</strong>. We compare both to measure the "privacy cost."</p>
+    <h3>What the Numbers Mean</h3>
+    <p><span class="term">Jensen's Alpha</span> — How much better (or worse) your portfolio does compared to what a basic market theory (CAPM) says it should. Positive = you're beating the market smartly.</p>
+    <p><span class="term">Sharpe Ratio</span> — Return per unit of risk. Above 1.0 is good, above 2.0 is excellent. Think of it as "bang for your buck."</p>
+    <p><span class="term">Max Drawdown</span> — The biggest peak-to-trough drop. If your portfolio was worth $100k and dropped to $78k at worst, the drawdown is 22%.</p>
+    <p><span class="term">Calmar Ratio</span> — Total return divided by max drawdown. Higher means you're being well-compensated for the worst dips.</p>
+    <p><span class="term">CVaR (95%)</span> — Conditional Value at Risk. In the worst 5% of scenarios, this is how much you could lose. It's the "nightmare scenario" number.</p>
+    <p><span class="term">Δ Delta</span> — The difference between Plaintext and FHE predictions. Smaller deltas mean encryption barely affects accuracy — which is the whole point of this research.</p>
+    <h3>Model Specifications</h3>
+    <p>Plaintext: XGBoost (150 trees, depth 6) • FHE: Concrete-ML XGBoost (30 trees, depth 4, 5-bit quantization) • 6 assets over 10yr Indian + Global markets • 4-year rolling prediction window</p>
+  </div>
+</div>
+
+<aside>
+  <h1><span class="lock">🔐</span> VeilMetric</h1>
+  <p class="sub">Dual-Engine Portfolio Intelligence</p>
+  <span class="badge">RESEARCH BUILD</span>
+  <div class="divider"></div>
+  <label>Total Wealth (USD)</label>
+  <input type="number" id="wealth" value="100000" step="1000">
+  <div class="divider"></div>
+  <label>Gold (%)</label><input type="number" id="w_gold" value="20" min="0" max="100" oninput="updateSum()">
+  <label>Silver (%)</label><input type="number" id="w_silver" value="5" min="0" max="100" oninput="updateSum()">
+  <label>Bitcoin (%)</label><input type="number" id="w_btc" value="10" min="0" max="100" oninput="updateSum()">
+  <label>Ethereum (%)</label><input type="number" id="w_eth" value="5" min="0" max="100" oninput="updateSum()">
+  <label>Nifty 50 (%)</label><input type="number" id="w_nifty" value="40" min="0" max="100" oninput="updateSum()">
+  <label>Nippon India (%)</label><input type="number" id="w_nippon" value="20" min="0" max="100" oninput="updateSum()">
+  <div id="sum-warn"></div>
+  <button id="run-btn" onclick="runAnalysis()"><span class="shimmer"></span>Run Dual-Engine Analysis</button>
+  <div id="status"></div>
+  <div class="about-link" onclick="document.getElementById('about-modal').classList.add('active')">ⓘ What do these numbers mean?</div>
+</aside>
+
+<main>
+  <h2>Research Dashboard</h2>
+  <p class="tagline">Comparing Plaintext XGBoost vs. Concrete-ML FHE — live dual-engine portfolio risk analytics</p>
+
+  <div id="empty-state">
+    <h3>⏳ Awaiting Input</h3>
+    <p>Set your portfolio allocation on the left and run the dual-engine analysis.</p>
+  </div>
+
+  <div id="results">
+    <div class="reveal">
+      <div class="section-title">Dual-Engine Raw Predictions</div>
+      <table class="dual-table">
+        <thead><tr>
+          <th>Agent</th><th style="color:var(--teal)">XGBoost (Plaintext)</th>
+          <th style="color:var(--purple)">Concrete-ML (FHE)</th><th>Δ Accuracy Delta</th>
+        </tr></thead>
+        <tbody>
+          <tr><td>Return (4yr total)</td><td class="val-std" id="t-ret-std">—</td><td class="val-fhe" id="t-ret-fhe">—</td><td id="t-ret-delta">—</td></tr>
+          <tr><td>Max Drawdown</td><td class="val-std" id="t-dd-std">—</td><td class="val-fhe" id="t-dd-fhe">—</td><td id="t-dd-delta">—</td></tr>
+          <tr><td>Annualized Volatility</td><td class="val-std" id="t-vol-std">—</td><td class="val-fhe" id="t-vol-fhe">—</td><td id="t-vol-delta">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="reveal">
+      <div class="section-title">Portfolio Analytics — Plaintext vs FHE</div>
+      <div class="analytics-grid">
+        <div class="card" style="border-color:rgba(167,139,250,0.3)">
+          <div class="card-label">Jensen's Alpha</div>
+          <div class="card-std c-purple" id="a-alpha-std">—</div>
+          <div class="card-fhe" id="a-alpha-fhe">FHE: —</div>
+          <div class="card-sub">Are you beating the market through skill, not just luck? Positive = outperforming.</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Sharpe Ratio</div>
+          <div class="card-std c-blue" id="a-sharpe-std">—</div>
+          <div class="card-fhe" id="a-sharpe-fhe">FHE: —</div>
+          <div class="card-sub">Return per unit of risk. Above 1 = good, above 2 = excellent. Your "bang for buck."</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Calmar Ratio</div>
+          <div class="card-std c-teal" id="a-calmar-std">—</div>
+          <div class="card-fhe" id="a-calmar-fhe">FHE: —</div>
+          <div class="card-sub">Return divided by worst crash. Higher = better recovery from bad times.</div>
+        </div>
+        <div class="card" style="border-color:rgba(255,107,107,0.3)">
+          <div class="card-label">CVaR 95%</div>
+          <div class="card-std c-coral" id="a-cvar-std">—</div>
+          <div class="card-fhe" id="a-cvar-fhe">FHE: —</div>
+          <div class="card-sub">Worst-case loss in the bottom 5% of scenarios — the "nightmare number."</div>
+        </div>
+        <div class="card">
+          <div class="card-label">4yr Expected Return</div>
+          <div class="card-std c-teal" id="a-ret-std">—</div>
+          <div class="card-fhe" id="a-ret-fhe">FHE: —</div>
+          <div class="card-sub">Total projected portfolio gain over the 4-year prediction window.</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Wealth Projection</div>
+          <div class="card-std" id="a-wealth-std">—</div>
+          <div class="card-fhe" id="a-wealth-fhe">FHE: —</div>
+          <div class="card-sub">What your invested capital could grow to after 4 years.</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Max Drawdown (USD)</div>
+          <div class="card-std c-coral" id="a-mdd-std">—</div>
+          <div class="card-fhe" id="a-mdd-fhe">FHE: —</div>
+          <div class="card-sub">Biggest dollar loss from peak to bottom. The worst dip in real money.</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Upside Capture</div>
+          <div class="card-std c-amber" id="a-capture-std">—</div>
+          <div class="card-fhe" id="a-capture-fhe">FHE: —</div>
+          <div class="card-sub">How much of the Nifty 50's gains you captured. Over 100% = you beat the benchmark.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="reveal">
+      <div class="section-title">Visual Analysis</div>
+      <div class="charts-grid">
+        <div class="chart-box"><div class="chart-title">Risk Profile — Plaintext vs FHE</div><canvas id="chart-radar" height="280"></canvas></div>
+        <div class="chart-box"><div class="chart-title">FHE Cryptographic Accuracy (Δ per Agent)</div><canvas id="chart-delta" height="280"></canvas></div>
+        <div class="chart-box"><div class="chart-title">Your Portfolio Allocation</div><canvas id="chart-donut" height="280"></canvas></div>
+        <div class="chart-box"><div class="chart-title">Simulated 48-Month Wealth Trajectory</div><canvas id="chart-wealth" height="280"></canvas></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+let charts={};
+const audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+function beep(freq,dur){const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);o.frequency.value=freq;g.gain.value=0.08;o.start();g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+dur);o.stop(audioCtx.currentTime+dur)}
+function tickSound(){beep(800,0.08)}
+function doneSound(){beep(523,0.1);setTimeout(()=>beep(659,0.1),120);setTimeout(()=>beep(784,0.15),240)}
+
+function pct(v,d=2){return v==null?'—':(v>=0?'+':'')+v.toFixed(d)+'%'}
+function usd(v){return v==null?'—':new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(v)}
+function fmt2(v){return v==null?'—':(v>=0?'+':'')+v.toFixed(2)}
+function setF(id,val){const e=document.getElementById(id);if(e)e.textContent=val}
+function setDelta(id,val){const e=document.getElementById(id);if(!e)return;e.textContent=val==null?'—':(val>=0?'+':'')+val.toFixed(6);e.className=val==null?'':(val>=0?'delta-pos':'delta-neg')}
+
+function updateSum(){
+  const ids=['w_gold','w_silver','w_btc','w_eth','w_nifty','w_nippon'];
+  const sum=ids.reduce((s,id)=>s+(parseFloat(document.getElementById(id).value)||0),0);
+  document.getElementById('sum-warn').textContent=Math.abs(sum-100)<0.01?'':`⚠ Sum = ${sum.toFixed(1)}% (must equal 100%)`;
+}
+
+async function animateLoader(stepId,delay){
+  document.getElementById(stepId).classList.add('active');
+  tickSound();
+  await new Promise(r=>setTimeout(r,delay));
+  document.getElementById(stepId).classList.remove('active');
+  document.getElementById(stepId).classList.add('done');
+}
+
+function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id]}}
+
+function simPath(wealth,annRet,annVol,months,seed){
+  let s=seed>>>0;
+  function rng(){s=(Math.imul(1664525,s)+1013904223)>>>0;return s/4294967295}
+  function randn(){return Math.sqrt(-2*Math.log(rng()+1e-9))*Math.cos(2*Math.PI*rng())}
+  const mr=annRet/12,mv=annVol/Math.sqrt(12);
+  let cur=wealth,path=[wealth];
+  for(let i=0;i<months;i++){cur*=Math.exp(mr-0.5*mv*mv+mv*randn());path.push(cur)}
+  return path;
+}
+
+function revealSections(){
+  const els=document.querySelectorAll('.reveal');
+  els.forEach((el,i)=>setTimeout(()=>el.classList.add('visible'),i*200));
+}
+
+function renderCharts(data){
+  const ag=data.agents,std=data.analytics.standard,fhe=data.analytics.fhe,mkt=data.market,w=data.input.weights,wealth=data.input.wealth;
+  destroyChart('radar');destroyChart('delta');destroyChart('donut');destroyChart('wealth');
+  const norm=(v,lo,hi)=>Math.max(0,Math.min(1,(v-lo)/(hi-lo)));
+  const rL=['Return','Low Vol','Low DD','Sharpe','Alpha'];
+  const sR=[norm(ag.return.standard,0,1.5),1-norm(ag.volatility.standard,0,0.5),1-norm(ag.drawdown.standard,0,0.6),norm(std.sharpe_ratio,-1,3),norm(std.jensens_alpha/100,-0.3,0.3)].map(v=>(v*100).toFixed(1));
+  const fR=[norm(ag.return.fhe,0,1.5),1-norm(ag.volatility.fhe,0,0.5),1-norm(ag.drawdown.fhe,0,0.6),norm(fhe.sharpe_ratio,-1,3),norm(fhe.jensens_alpha/100,-0.3,0.3)].map(v=>(v*100).toFixed(1));
+  charts['radar']=new Chart(document.getElementById('chart-radar'),{type:'radar',data:{labels:rL,datasets:[
+    {label:'Plaintext',data:sR,borderColor:'#00d4a0',backgroundColor:'rgba(0,212,160,0.12)',pointBackgroundColor:'#00d4a0',borderWidth:2},
+    {label:'FHE',data:fR,borderColor:'#a78bfa',backgroundColor:'rgba(167,139,250,0.12)',pointBackgroundColor:'#a78bfa',borderWidth:2}
+  ]},options:{scales:{r:{min:0,max:100,grid:{color:'rgba(255,255,255,0.05)'},pointLabels:{color:'#8b90a0',font:{family:'IBM Plex Mono',size:11}},ticks:{display:false}}},plugins:{legend:{labels:{color:'#8b90a0',font:{family:'IBM Plex Mono',size:11}}}}}});
+
+  charts['delta']=new Chart(document.getElementById('chart-delta'),{type:'bar',data:{labels:['Return Δ','Drawdown Δ','Volatility Δ'],datasets:[{label:'FHE − Plaintext',data:[ag.return.delta,ag.drawdown.delta,ag.volatility.delta],backgroundColor:['rgba(0,212,160,0.5)','rgba(255,107,107,0.5)','rgba(91,141,238,0.5)'],borderColor:['#00d4a0','#ff6b6b','#5b8dee'],borderWidth:1}]},options:{plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8b90a0',font:{family:'IBM Plex Mono',size:11}}},y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8b90a0',font:{family:'IBM Plex Mono',size:11}}}}}});
+
+  const wL=['Gold','Silver','Bitcoin','Ethereum','Nifty 50','Nippon India'];
+  const wV=[w.Gold,w.Silver,w.Bitcoin,w.Ethereum,w.Nifty,w.Nippon].map(v=>(v*100).toFixed(1));
+  charts['donut']=new Chart(document.getElementById('chart-donut'),{type:'doughnut',data:{labels:wL,datasets:[{data:wV,backgroundColor:['#f5a623','#8b90a0','#ff6b6b','#5b8dee','#00d4a0','#a78bfa'],borderWidth:0}]},options:{plugins:{legend:{position:'right',labels:{color:'#8b90a0',font:{family:'IBM Plex Mono',size:11},padding:10}}},cutout:'65%'}});
+
+  const months=Array.from({length:49},(_,i)=>i);
+  const arS=(1+Math.max(ag.return.standard,-0.99))**0.25-1;
+  const arF=(1+Math.max(ag.return.fhe,-0.99))**0.25-1;
+  const arN=(1+Math.max(Math.exp(mkt.context_momentum)-1,-0.99))**0.25-1;
+  const seed=Math.round(Math.abs(ag.return.standard*1e6));
+  charts['wealth']=new Chart(document.getElementById('chart-wealth'),{type:'line',data:{labels:months.map(m=>m===0?'Now':'M'+m),datasets:[
+    {label:'Plaintext XGB',data:simPath(wealth,arS,ag.volatility.standard,48,seed),borderColor:'#00d4a0',borderWidth:2,pointRadius:0,tension:0.3,fill:false},
+    {label:'FHE XGB',data:simPath(wealth,arF,ag.volatility.fhe,48,seed+1),borderColor:'#a78bfa',borderWidth:2,pointRadius:0,tension:0.3,fill:false,borderDash:[4,4]},
+    {label:'Nifty Benchmark',data:simPath(wealth,arN,mkt.context_vol,48,seed+2),borderColor:'#f5a623',borderWidth:1.5,pointRadius:0,tension:0.3,fill:false,borderDash:[2,4]}
+  ]},options:{plugins:{legend:{labels:{color:'#8b90a0',font:{family:'IBM Plex Mono',size:11}}}},scales:{x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#8b90a0',font:{family:'IBM Plex Mono',size:10},maxTicksLimit:9}},y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#8b90a0',font:{family:'IBM Plex Mono',size:10},callback:v=>'$'+Math.round(v/1000)+'k'}}}}});
+}
+
+async function runAnalysis(){
+  const btn=document.getElementById('run-btn');
+  const status=document.getElementById('status');
+  const ids=['w_gold','w_silver','w_btc','w_eth','w_nifty','w_nippon'];
+  const sum=ids.reduce((s,id)=>s+(parseFloat(document.getElementById(id).value)||0),0);
+  if(Math.abs(sum-100)>0.5){alert('Weights sum to '+sum.toFixed(1)+'%. Must equal 100%.');return}
+  btn.disabled=true;status.textContent='';
+  for(let i=1;i<=5;i++)document.getElementById('ls-'+i).className='loader-step';
+  document.getElementById('loading-overlay').classList.add('active');
+  const wealth=parseFloat(document.getElementById('wealth').value)||100000;
+  const weights={Gold:parseFloat(document.getElementById('w_gold').value)/100,Silver:parseFloat(document.getElementById('w_silver').value)/100,Bitcoin:parseFloat(document.getElementById('w_btc').value)/100,Ethereum:parseFloat(document.getElementById('w_eth').value)/100,Nifty:parseFloat(document.getElementById('w_nifty').value)/100,Nippon:parseFloat(document.getElementById('w_nippon').value)/100};
+
+  try{
+    const fetchP=fetch('/api/predict/benchmark',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({weights,wealth})});
+    await animateLoader('ls-1',1200);
+    await animateLoader('ls-2',1500);
+    await animateLoader('ls-3',1000);
+    const res=await fetchP;
+    await animateLoader('ls-4',800);
+    if(!res.ok){const err=await res.json();throw new Error(err.detail||'API error')}
+    const data=await res.json();
+    await animateLoader('ls-5',600);
+    document.getElementById('loading-overlay').classList.remove('active');
+    doneSound();
+
+    const ag=data.agents,std=data.analytics.standard,fhe=data.analytics.fhe;
+    setF('t-ret-std',pct(ag.return.standard*100));setF('t-ret-fhe',pct(ag.return.fhe*100));setDelta('t-ret-delta',ag.return.delta);
+    setF('t-dd-std',pct(ag.drawdown.standard*100));setF('t-dd-fhe',pct(ag.drawdown.fhe*100));setDelta('t-dd-delta',ag.drawdown.delta);
+    setF('t-vol-std',pct(ag.volatility.standard*100));setF('t-vol-fhe',pct(ag.volatility.fhe*100));setDelta('t-vol-delta',ag.volatility.delta);
+    setF('a-alpha-std',pct(std.jensens_alpha));setF('a-alpha-fhe','FHE: '+pct(fhe.jensens_alpha));
+    setF('a-sharpe-std',fmt2(std.sharpe_ratio));setF('a-sharpe-fhe','FHE: '+fmt2(fhe.sharpe_ratio));
+    setF('a-calmar-std',fmt2(std.calmar_ratio));setF('a-calmar-fhe','FHE: '+fmt2(fhe.calmar_ratio));
+    setF('a-cvar-std',pct(std.cvar_proxy));setF('a-cvar-fhe','FHE: '+pct(fhe.cvar_proxy));
+    setF('a-ret-std',pct(ag.return.standard*100));setF('a-ret-fhe','FHE: '+pct(ag.return.fhe*100));
+    setF('a-wealth-std',usd(std.wealth_projection));setF('a-wealth-fhe','FHE: '+usd(fhe.wealth_projection));
+    setF('a-mdd-std',usd(std.max_drawdown_usd));setF('a-mdd-fhe','FHE: '+usd(fhe.max_drawdown_usd));
+    setF('a-capture-std',fmt2(std.upside_capture)+'%');setF('a-capture-fhe','FHE: '+fmt2(fhe.upside_capture)+'%');
+    renderCharts(data);
+    document.getElementById('empty-state').style.display='none';
+    document.getElementById('results').style.display='flex';
+    revealSections();
+    status.textContent='✓ Analysis complete — decrypted & rendered.';
+  }catch(e){
+    document.getElementById('loading-overlay').classList.remove('active');
+    status.textContent='✗ '+e.message;
+    console.error(e);
+  }
+  btn.disabled=false;
+}
+updateSum();
+</script>
+</body>
+</html>

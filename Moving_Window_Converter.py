@@ -1,7 +1,11 @@
 import numpy as np
 import pandas as pd
 import time
+import yfinance as yf # Added for live data fetching
 
+# ---------------------------------------------------------
+# 1. HISTORICAL TRAINING DATA GENERATOR (Unchanged)
+# ---------------------------------------------------------
 def generate_contextual_data(profiles_csv="user_training_data.csv", market_csv="market_log_returns.csv"):
     print("1. Loading Data...")
     profiles_df = pd.read_csv(profiles_csv)
@@ -28,7 +32,7 @@ def generate_contextual_data(profiles_csv="user_training_data.csv", market_csv="
     max_drawdowns = np.zeros(num_portfolios)
     std_devs = np.zeros(num_portfolios)
 
-    print(f"2. Simulating 1M portfolios with Market Context... 🚀")
+    print("2. Processing Windows...")
     start_time = time.time()
     
     for i in range(num_portfolios):
@@ -54,7 +58,7 @@ def generate_contextual_data(profiles_csv="user_training_data.csv", market_csv="
     print(f"Finished in {time.time() - start_time:.2f}s")
 
     # 3. Save Enhanced Dataset
-    final_df = profiles_df[weight_cols].copy()
+    final_df = profiles_df.copy()
     final_df['Context_Momentum'] = context_momentum
     final_df['Context_Vol'] = context_vol
     final_df['Target_Return'] = total_returns
@@ -62,7 +66,44 @@ def generate_contextual_data(profiles_csv="user_training_data.csv", market_csv="
     final_df['Target_Volatility'] = std_devs
     
     final_df.to_csv("enhanced_training_data.csv", index=False)
-    print("Done")
+    print("Saved to enhanced_training_data.csv")
+
+# ---------------------------------------------------------
+# 2. LIVE INFERENCE FEATURE ENGINEERING (New Additions)
+# ---------------------------------------------------------
+def get_live_market_context():
+    """
+    Fetches the last 1 year of Nifty 50 data to calculate 
+    the current Market Momentum and Volatility.
+    """
+    nifty_data = yf.download("^NSEI", period="1y", progress=False)['Close']
+    log_returns = np.log(nifty_data / nifty_data.shift(1)).dropna()
+    
+    context_momentum = log_returns.sum().item()
+    context_vol = (log_returns.std() * np.sqrt(252)).item()
+    
+    return context_momentum, context_vol
+
+def prepare_live_features(user_weights_dict):
+    """
+    Combines user weights with live market context to output
+    the exact DataFrame format required by the XGBoost/FHE models.
+    """
+    momentum, vol = get_live_market_context()
+    
+    features = pd.DataFrame([{
+        "w_GC=F": user_weights_dict.get("Gold", 0),
+        "w_SI=F": user_weights_dict.get("Silver", 0),
+        "w_BTC-USD": user_weights_dict.get("Bitcoin", 0),
+        "w_ETH-USD": user_weights_dict.get("Ethereum", 0),
+        "w_^NSEI_USD": user_weights_dict.get("Nifty", 0),
+        "w_NAM-INDIA.NS_USD": user_weights_dict.get("Nippon", 0),
+        "Context_Momentum": momentum,
+        "Context_Vol": vol
+    }])
+    
+    return features
 
 if __name__ == "__main__":
+    # If run directly, default to generating training data
     generate_contextual_data()

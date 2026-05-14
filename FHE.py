@@ -1,12 +1,17 @@
+import logging
+import os
+import time
+
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from concrete.ml.sklearn import XGBRegressor
 from concrete.ml.deployment import FHEModelDev
-import time
-import os
+
+log = logging.getLogger("veilmetric.fhe")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(message)s")
 
 def compile_and_export_fhe(data_path="enhanced_training_data.csv"):
-    print("Start")
+    log.info("Starting FHE compilation from %s", data_path)
     df = pd.read_csv(data_path)
     
     # 1. Define Features (Weights + Context)
@@ -24,7 +29,7 @@ def compile_and_export_fhe(data_path="enhanced_training_data.csv"):
     os.makedirs(export_dir, exist_ok=True)
 
     for name, col in targets.items():
-        print(f"\n--- Compiling {name} Agent ---")
+        log.info("Compiling %s agent", name)
         y = df[col]
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
@@ -34,22 +39,22 @@ def compile_and_export_fhe(data_path="enhanced_training_data.csv"):
         
         # 3. Train the Quantized Version
         start_train = time.time()
-        print("Training Quantized Model...", end=" ", flush=True)
+        log.info("Training quantized model...")
         fhe_model.fit(X_train, y_train)
-        print(f"Done! ({time.time() - start_train:.2f}s)")
+        log.info("Trained in %.2fs", time.time() - start_train)
 
-        print("Compiling FHE Circuit", end=" ", flush=True)
+        log.info("Compiling FHE circuit...")
         start_compile = time.time()
         fhe_model.compile(X_train.head(1000)) 
-        print(f"Done! ({time.time() - start_compile:.2f}s)")
+        log.info("Compiled in %.2fs", time.time() - start_compile)
 
         # 5. Export the FHE Deployment Files
         agent_dir = os.path.join(export_dir, name.lower())
         dev = FHEModelDev(agent_dir, fhe_model)
         dev.save()
-        print(f" Assets in '{agent_dir}'")
+        log.info("Exported FHE assets to %s", agent_dir)
 
-    print("\n All 3 agents have been successfully compiled into FHE circuits!")
+    log.info("All 3 agents compiled into FHE circuits.")
 
 if __name__ == "__main__":
     compile_and_export_fhe()
