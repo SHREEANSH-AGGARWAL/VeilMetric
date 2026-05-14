@@ -236,7 +236,7 @@ VeilMetric/
 │   ├── return/
 │   ├── drawdown/
 │   └── volatility/
-└── notneeded/                   # Archived experimental scripts
+└── archives/                   # Archived experimental scripts
 ```
 
 ---
