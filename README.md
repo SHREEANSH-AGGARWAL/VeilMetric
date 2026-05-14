@@ -50,7 +50,7 @@ VeilMetric is a research project that predicts multi-asset portfolio performance
 
 ## Model Specifications
 
-### Plaintext XGBoost (3 agents)
+### Standard XGBoost (3 agents)
 - 150 trees, max depth 6, learning rate 0.1
 - `tree_method='hist'` for fast histogram-based training
 - Trained on full-precision features
@@ -95,13 +95,12 @@ All metrics below are computed dynamically from the three agent outputs — noth
 ## Setup
 
 ### Prerequisites
-- Python 3.10+
-- Conda (recommended for managing Concrete-ML dependencies)
+- **Python 3.10** (required — `concrete-ml` does not support 3.11+)
+- Conda (recommended) or Docker
 
 ### Installation
 
 ```bash
-# Clone the repository
 git clone https://github.com/SHREEANSH-AGGARWAL/VeilMetric.git
 cd VeilMetric
 
@@ -110,7 +109,7 @@ conda create -n veilmetric python=3.10 -y
 conda activate veilmetric
 
 # Install dependencies
-pip install fastapi uvicorn xgboost concrete-ml yfinance pandas numpy scikit-learn
+pip install -r requirements.txt
 ```
 
 ### Running the Full Pipeline (first time only)
@@ -122,7 +121,7 @@ python data_ingestion.py
 # 2. Generate enhanced training data
 python Moving_Window_Converter.py
 
-# 3. Train plaintext XGBoost agents
+# 3. Train standard XGBoost agents
 python dynamic_XGBoost.py
 
 # 4. Compile FHE circuits (takes several minutes)
@@ -137,6 +136,14 @@ python main.py
 ```
 
 The dashboard will be available at **http://localhost:8000**.
+
+### Docker (alternative)
+
+```bash
+# Build and run (pre-trained models must already exist in the repo)
+docker build -t veilmetric .
+docker run -p 8000:8000 veilmetric
+```
 
 ---
 
@@ -216,11 +223,15 @@ VeilMetric/
 ├── research_dashboard.html      # Frontend dashboard
 ├── data_ingestion.py            # Market data download
 ├── Moving_Window_Converter.py   # Feature engineering
-├── dynamic_XGBoost.py           # Plaintext model training
+├── dynamic_XGBoost.py           # Standard model training
 ├── FHE.py                       # FHE circuit compilation
-├── agent_return.json            # Trained plaintext model
-├── agent_drawdown.json          # Trained plaintext model
-├── agent_volatility.json        # Trained plaintext model
+├── requirements.txt             # Pinned dependencies
+├── Dockerfile                   # Container build
+├── .dockerignore                # Docker exclusions
+├── .python-version              # Pins Python 3.10
+├── agent_return.json            # Trained standard model
+├── agent_drawdown.json          # Trained standard model
+├── agent_volatility.json        # Trained standard model
 ├── fhe_vault/                   # FHE deployment artifacts
 │   ├── return/
 │   ├── drawdown/
