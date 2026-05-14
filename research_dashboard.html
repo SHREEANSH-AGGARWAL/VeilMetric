@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VeilMetric — Dual-Engine Research Dashboard</title>
-<meta name="description" content="FHE-encrypted portfolio risk analytics comparing Plaintext XGBoost vs Concrete-ML predictions">
+<meta name="description" content="FHE-encrypted portfolio risk analytics comparing Standard XGBoost vs Concrete-ML predictions">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Syne:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -120,7 +120,7 @@ main .tagline{font-family:var(--mono);font-size:0.78rem;color:var(--txt2);margin
   <div class="loader-ring"></div>
   <div class="loader-steps">
     <div class="loader-step" id="ls-1"><span class="dot">○</span><span class="check">✓</span> Fetching live Nifty 50 market data...</div>
-    <div class="loader-step" id="ls-2"><span class="dot">○</span><span class="check">✓</span> Running Plaintext XGBoost (3 agents)...</div>
+    <div class="loader-step" id="ls-2"><span class="dot">○</span><span class="check">✓</span> Running Standard XGBoost (3 agents)...</div>
     <div class="loader-step" id="ls-3"><span class="dot">○</span><span class="check">✓</span> Encrypting data with FHE keys...</div>
     <div class="loader-step" id="ls-4"><span class="dot">○</span><span class="check">✓</span> Running encrypted inference on server...</div>
     <div class="loader-step" id="ls-5"><span class="dot">○</span><span class="check">✓</span> Decrypting results & computing analytics...</div>
@@ -133,7 +133,7 @@ main .tagline{font-family:var(--mono);font-size:0.78rem;color:var(--txt2);margin
     <h2>What is VeilMetric?</h2>
     <p>VeilMetric is a <span class="term">research project</span> that predicts your portfolio's future performance using machine learning — and then does the <em>exact same thing</em> on <span class="term-p">encrypted data</span>, so your financial information is never exposed.</p>
     <h3>The Two Engines</h3>
-    <p><span class="term">Plaintext XGBoost</span> — A standard ML model that sees your raw portfolio weights. Fast and accurate, but requires trust in the server.</p>
+    <p><span class="term">Standard XGBoost</span> — A conventional ML model that sees your raw portfolio weights. Fast and accurate, but requires trust in the server.</p>
     <p><span class="term-p">FHE XGBoost (Concrete-ML)</span> — The same model, but running on <em>encrypted</em> data using Fully Homomorphic Encryption by Zama. The server <strong>never sees your actual numbers</strong>. We compare both to measure the "privacy cost."</p>
     <h3>What the Numbers Mean</h3>
     <p><span class="term">Jensen's Alpha</span> — How much better (or worse) your portfolio does compared to what a basic market theory (CAPM) says it should. Positive = you're beating the market smartly.</p>
@@ -141,9 +141,9 @@ main .tagline{font-family:var(--mono);font-size:0.78rem;color:var(--txt2);margin
     <p><span class="term">Max Drawdown</span> — The biggest peak-to-trough drop. If your portfolio was worth $100k and dropped to $78k at worst, the drawdown is 22%.</p>
     <p><span class="term">Calmar Ratio</span> — Total return divided by max drawdown. Higher means you're being well-compensated for the worst dips.</p>
     <p><span class="term">CVaR (95%)</span> — Conditional Value at Risk. In the worst 5% of scenarios, this is how much you could lose. It's the "nightmare scenario" number.</p>
-    <p><span class="term">Δ Delta</span> — The difference between Plaintext and FHE predictions. Smaller deltas mean encryption barely affects accuracy — which is the whole point of this research.</p>
+    <p><span class="term">Δ Delta</span> — The difference between Plaintext and FHE predictions. Smaller deltas mean encryption barely affects accuracy — the core research question.</p>
     <h3>Model Specifications</h3>
-    <p>Plaintext: XGBoost (150 trees, depth 6) • FHE: Concrete-ML XGBoost (30 trees, depth 4, 5-bit quantization) • 6 assets over 10yr Indian + Global markets • 4-year rolling prediction window</p>
+    <p>Standard: XGBoost (150 trees, depth 6) • FHE: Concrete-ML XGBoost (30 trees, depth 4, 5-bit quantization) • 6 assets over 10yr Indian + Global markets • 4-year rolling prediction window</p>
   </div>
 </div>
 
@@ -169,7 +169,7 @@ main .tagline{font-family:var(--mono);font-size:0.78rem;color:var(--txt2);margin
 
 <main>
   <h2>Research Dashboard</h2>
-  <p class="tagline">Comparing Plaintext XGBoost vs. Concrete-ML FHE — live dual-engine portfolio risk analytics</p>
+  <p class="tagline">Comparing Standard XGBoost vs. Concrete-ML FHE — live dual-engine portfolio risk analytics</p>
 
   <div id="empty-state">
     <h3>⏳ Awaiting Input</h3>
@@ -181,7 +181,7 @@ main .tagline{font-family:var(--mono);font-size:0.78rem;color:var(--txt2);margin
       <div class="section-title">Dual-Engine Raw Predictions</div>
       <table class="dual-table">
         <thead><tr>
-          <th>Agent</th><th style="color:var(--teal)">XGBoost (Plaintext)</th>
+          <th>Agent</th><th style="color:var(--teal)">XGBoost (Standard)</th>
           <th style="color:var(--purple)">Concrete-ML (FHE)</th><th>Δ Accuracy Delta</th>
         </tr></thead>
         <tbody>
@@ -193,7 +193,7 @@ main .tagline{font-family:var(--mono);font-size:0.78rem;color:var(--txt2);margin
     </div>
 
     <div class="reveal">
-      <div class="section-title">Portfolio Analytics — Plaintext vs FHE</div>
+      <div class="section-title">Portfolio Analytics — Standard vs FHE</div>
       <div class="analytics-grid">
         <div class="card" style="border-color:rgba(167,139,250,0.3)">
           <div class="card-label">Jensen's Alpha</div>
@@ -249,7 +249,7 @@ main .tagline{font-family:var(--mono);font-size:0.78rem;color:var(--txt2);margin
     <div class="reveal">
       <div class="section-title">Visual Analysis</div>
       <div class="charts-grid">
-        <div class="chart-box"><div class="chart-title">Risk Profile — Plaintext vs FHE</div><canvas id="chart-radar" height="280"></canvas></div>
+        <div class="chart-box"><div class="chart-title">Risk Profile — Standard vs FHE</div><canvas id="chart-radar" height="280"></canvas></div>
         <div class="chart-box"><div class="chart-title">FHE Cryptographic Accuracy (Δ per Agent)</div><canvas id="chart-delta" height="280"></canvas></div>
         <div class="chart-box"><div class="chart-title">Your Portfolio Allocation</div><canvas id="chart-donut" height="280"></canvas></div>
         <div class="chart-box"><div class="chart-title">Simulated 48-Month Wealth Trajectory</div><canvas id="chart-wealth" height="280"></canvas></div>
@@ -310,11 +310,11 @@ function renderCharts(data){
   const sR=[norm(ag.return.standard,0,1.5),1-norm(ag.volatility.standard,0,0.5),1-norm(ag.drawdown.standard,0,0.6),norm(std.sharpe_ratio,-1,3),norm(std.jensens_alpha/100,-0.3,0.3)].map(v=>(v*100).toFixed(1));
   const fR=[norm(ag.return.fhe,0,1.5),1-norm(ag.volatility.fhe,0,0.5),1-norm(ag.drawdown.fhe,0,0.6),norm(fhe.sharpe_ratio,-1,3),norm(fhe.jensens_alpha/100,-0.3,0.3)].map(v=>(v*100).toFixed(1));
   charts['radar']=new Chart(document.getElementById('chart-radar'),{type:'radar',data:{labels:rL,datasets:[
-    {label:'Plaintext',data:sR,borderColor:'#00d4a0',backgroundColor:'rgba(0,212,160,0.12)',pointBackgroundColor:'#00d4a0',borderWidth:2},
+    {label:'Standard',data:sR,borderColor:'#00d4a0',backgroundColor:'rgba(0,212,160,0.12)',pointBackgroundColor:'#00d4a0',borderWidth:2},
     {label:'FHE',data:fR,borderColor:'#a78bfa',backgroundColor:'rgba(167,139,250,0.12)',pointBackgroundColor:'#a78bfa',borderWidth:2}
   ]},options:{scales:{r:{min:0,max:100,grid:{color:'rgba(255,255,255,0.05)'},pointLabels:{color:'#8b90a0',font:{family:'IBM Plex Mono',size:11}},ticks:{display:false}}},plugins:{legend:{labels:{color:'#8b90a0',font:{family:'IBM Plex Mono',size:11}}}}}});
 
-  charts['delta']=new Chart(document.getElementById('chart-delta'),{type:'bar',data:{labels:['Return Δ','Drawdown Δ','Volatility Δ'],datasets:[{label:'FHE − Plaintext',data:[ag.return.delta,ag.drawdown.delta,ag.volatility.delta],backgroundColor:['rgba(0,212,160,0.5)','rgba(255,107,107,0.5)','rgba(91,141,238,0.5)'],borderColor:['#00d4a0','#ff6b6b','#5b8dee'],borderWidth:1}]},options:{plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8b90a0',font:{family:'IBM Plex Mono',size:11}}},y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8b90a0',font:{family:'IBM Plex Mono',size:11}}}}}});
+  charts['delta']=new Chart(document.getElementById('chart-delta'),{type:'bar',data:{labels:['Return Δ','Drawdown Δ','Volatility Δ'],datasets:[{label:'FHE − Standard',data:[ag.return.delta,ag.drawdown.delta,ag.volatility.delta],backgroundColor:['rgba(0,212,160,0.5)','rgba(255,107,107,0.5)','rgba(91,141,238,0.5)'],borderColor:['#00d4a0','#ff6b6b','#5b8dee'],borderWidth:1}]},options:{plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8b90a0',font:{family:'IBM Plex Mono',size:11}}},y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8b90a0',font:{family:'IBM Plex Mono',size:11}}}}}});
 
   const wL=['Gold','Silver','Bitcoin','Ethereum','Nifty 50','Nippon India'];
   const wV=[w.Gold,w.Silver,w.Bitcoin,w.Ethereum,w.Nifty,w.Nippon].map(v=>(v*100).toFixed(1));
@@ -326,7 +326,7 @@ function renderCharts(data){
   const arN=(1+Math.max(Math.exp(mkt.context_momentum)-1,-0.99))**0.25-1;
   const seed=Math.round(Math.abs(ag.return.standard*1e6));
   charts['wealth']=new Chart(document.getElementById('chart-wealth'),{type:'line',data:{labels:months.map(m=>m===0?'Now':'M'+m),datasets:[
-    {label:'Plaintext XGB',data:simPath(wealth,arS,ag.volatility.standard,48,seed),borderColor:'#00d4a0',borderWidth:2,pointRadius:0,tension:0.3,fill:false},
+    {label:'Standard XGB',data:simPath(wealth,arS,ag.volatility.standard,48,seed),borderColor:'#00d4a0',borderWidth:2,pointRadius:0,tension:0.3,fill:false},
     {label:'FHE XGB',data:simPath(wealth,arF,ag.volatility.fhe,48,seed+1),borderColor:'#a78bfa',borderWidth:2,pointRadius:0,tension:0.3,fill:false,borderDash:[4,4]},
     {label:'Nifty Benchmark',data:simPath(wealth,arN,mkt.context_vol,48,seed+2),borderColor:'#f5a623',borderWidth:1.5,pointRadius:0,tension:0.3,fill:false,borderDash:[2,4]}
   ]},options:{plugins:{legend:{labels:{color:'#8b90a0',font:{family:'IBM Plex Mono',size:11}}}},scales:{x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#8b90a0',font:{family:'IBM Plex Mono',size:10},maxTicksLimit:9}},y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#8b90a0',font:{family:'IBM Plex Mono',size:10},callback:v=>'$'+Math.round(v/1000)+'k'}}}}});
