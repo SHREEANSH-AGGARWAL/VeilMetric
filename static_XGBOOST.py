@@ -6,7 +6,7 @@ from sklearn.metrics import r2_score, mean_absolute_error
 import matplotlib.pyplot as plt
 
 data_path = "user_training_data.csv"
-print(f"Loading synthetic user data from {data_path}...")
+print(f"Loading user data from {data_path}...")
 df = pd.read_csv(data_path)
     
 # 1. Split Features (Weights) and Target (CVaR)
@@ -21,7 +21,7 @@ model = xgb.XGBRegressor(
     n_estimators=150, 
     max_depth=6, 
     learning_rate=0.1, 
-    tree_method='hist', # Super fast for large datasets
+    tree_method='hist', 
     random_state=42
 )
 model.fit(X_train, y_train)
