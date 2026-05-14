@@ -51,7 +51,7 @@ def generate_contextual_data(profiles_csv="user_training_data.csv", market_csv="
         cum_ret = np.exp(np.cumsum(port_daily_ret))
         max_drawdowns[i] = abs(np.min((cum_ret - np.maximum.accumulate(cum_ret)) / np.maximum.accumulate(cum_ret)))
 
-    print(f"✅ Finished in {time.time() - start_time:.2f}s")
+    print(f"Finished in {time.time() - start_time:.2f}s")
 
     # 3. Save Enhanced Dataset
     final_df = profiles_df[weight_cols].copy()
@@ -62,7 +62,7 @@ def generate_contextual_data(profiles_csv="user_training_data.csv", market_csv="
     final_df['Target_Volatility'] = std_devs
     
     final_df.to_csv("enhanced_training_data.csv", index=False)
-    print("🎉 Dataset 'enhanced_training_data.csv' is ready!")
+    print("Done")
 
 if __name__ == "__main__":
     generate_contextual_data()

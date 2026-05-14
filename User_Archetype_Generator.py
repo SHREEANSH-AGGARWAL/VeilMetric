@@ -48,7 +48,7 @@ def calculate_cvar(w, ret_data,alpha=0.05):
     threshold = np.percentile(port_ret, alpha * 100)
     return abs(port_ret[port_ret <= threshold].mean())
 
-print(f"Calculating CVaR for {len(x_df)} realistic portfolios...")
+print(f"Calculating CVaR for {len(x_df)} portfolios")
 y = x_df.apply(lambda row: calculate_cvar(row.values, returns), axis=1)
 
 x_df['target_cvar'] = y

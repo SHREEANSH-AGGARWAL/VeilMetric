@@ -35,9 +35,6 @@ print("\n--- Model Performance ---")
 print(f"R-Squared (Accuracy): {r2 * 100:.3f}%")
 print(f"Mean Absolute Error: {mae:.6f} (Risk % variance)")
 
-# ==========================================
-# 4. ADVANCED VISUALIZATION DASHBOARD
-# ==========================================
 fig, axes = plt.subplots(1, 3, figsize=(18, 5))
 
 # Plot A: Actual vs. Predicted (The "Diagonal Line" Test)
@@ -62,15 +59,10 @@ xgb.plot_importance(model, importance_type='gain', ax=axes[2], title='Feature Im
 plt.tight_layout()
 plt.show()
 
-# ==========================================
-# 5. PRODUCTION READINESS (Saving the Model)
-# ==========================================
 model_filename = "veilmetric_v1.json"
 model.save_model(model_filename)
-print(f"\n✅ Model successfully saved to: {model_filename}")
+print(f" Model successfully saved to: {model_filename}")
 
-# Critical for the frontend and FHE compilation: The strict feature order
 expected_features = list(X.columns)
-print(f"📌 CRITICAL: Expected Input Array Order for FHE Inference:")
 for i, feature in enumerate(expected_features):
     print(f"   [{i}] {feature}")

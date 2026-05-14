@@ -5,13 +5,12 @@ from sklearn.metrics import r2_score, mean_absolute_error
 import time
 
 def train_multi_agent_system(data_path="enhanced_training_data.csv"):
-    print(f"🚀 Loading 1 Million Enhanced Profiles from {data_path}... ⏳")
+    print(f" Starting ")
     start_load = time.time()
     df = pd.read_csv(data_path)
     print(f"Loaded {len(df)} rows in {time.time() - start_load:.2f} seconds.")
     
-    # --- CRITICAL CHANGE HERE ---
-    # 1. Identify Features (Weights + Market Context)
+ 
     weight_cols = [c for c in df.columns if c.startswith('w_')]
     context_cols = ['Context_Momentum', 'Context_Vol']
     feature_cols = weight_cols + context_cols
@@ -40,7 +39,7 @@ def train_multi_agent_system(data_path="enhanced_training_data.csv"):
         'random_state': 42
     }
 
-    print("\n🧠 Training Context-Aware Specialized Agents...")
+    print("Training")
     
     for name, col in targets.items():
         start_agent = time.time()
@@ -61,7 +60,7 @@ def train_multi_agent_system(data_path="enhanced_training_data.csv"):
         
         model.save_model(f"agent_{name.lower()}.json")
 
-    print("\n✅ SUCCESS: All 3 Context-Aware agents saved.")
+    print("\n Saved ")
 
 if __name__ == "__main__":
     train_multi_agent_system()
