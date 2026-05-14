@@ -1,13 +1,17 @@
+import logging
+import time
+
 import numpy as np
 import pandas as pd
-import time
-import yfinance as yf # Added for live data fetching
+import yfinance as yf
+
+log = logging.getLogger("veilmetric.data")
 
 # ---------------------------------------------------------
 # 1. HISTORICAL TRAINING DATA GENERATOR (Unchanged)
 # ---------------------------------------------------------
 def generate_contextual_data(profiles_csv="user_training_data.csv", market_csv="market_log_returns.csv"):
-    print("1. Loading Data...")
+    log.info("Loading data from %s and %s", profiles_csv, market_csv)
     profiles_df = pd.read_csv(profiles_csv)
     weight_cols = [c for c in profiles_df.columns if c.startswith('w_')]
     weights_matrix = profiles_df[weight_cols].values
@@ -32,7 +36,7 @@ def generate_contextual_data(profiles_csv="user_training_data.csv", market_csv="
     max_drawdowns = np.zeros(num_portfolios)
     std_devs = np.zeros(num_portfolios)
 
-    print("2. Processing Windows...")
+    log.info("Processing %d portfolio windows...", num_portfolios)
     start_time = time.time()
     
     for i in range(num_portfolios):
@@ -55,7 +59,7 @@ def generate_contextual_data(profiles_csv="user_training_data.csv", market_csv="
         cum_ret = np.exp(np.cumsum(port_daily_ret))
         max_drawdowns[i] = abs(np.min((cum_ret - np.maximum.accumulate(cum_ret)) / np.maximum.accumulate(cum_ret)))
 
-    print(f"Finished in {time.time() - start_time:.2f}s")
+    log.info("Finished processing in %.2fs", time.time() - start_time)
 
     # 3. Save Enhanced Dataset
     final_df = profiles_df.copy()
@@ -66,7 +70,7 @@ def generate_contextual_data(profiles_csv="user_training_data.csv", market_csv="
     final_df['Target_Volatility'] = std_devs
     
     final_df.to_csv("enhanced_training_data.csv", index=False)
-    print("Saved to enhanced_training_data.csv")
+    log.info("Saved enhanced training data to enhanced_training_data.csv")
 
 # ---------------------------------------------------------
 # 2. LIVE INFERENCE FEATURE ENGINEERING (New Additions)

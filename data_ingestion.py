@@ -1,43 +1,34 @@
+"""
+Fetches 10 years of historical price data for 6 assets (Gold, Silver, BTC, ETH,
+Nifty 50, Nippon India) via yfinance, converts Indian tickers to USD, computes
+log returns, and saves the result as market_log_returns.csv.
+"""
 
-import pandas as pd 
+import logging
+
+import numpy as np
+import pandas as pd
 import yfinance as yf
-import matplotlib.pyplot as plt
-import numpy as np 
 
+log = logging.getLogger("veilmetric.ingest")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(message)s")
 
-IndianList=["^NSEI","NAM-INDIA.NS"]
-GlobalList=["GC=F","SI=F","BTC-USD","ETH-USD"]     
-USDRATEList= ["INR=X"]
+INDIAN_TICKERS = ["^NSEI", "NAM-INDIA.NS"]
+GLOBAL_TICKERS = ["GC=F", "SI=F", "BTC-USD", "ETH-USD"]
+FX_TICKER = ["INR=X"]
 
+all_tickers = INDIAN_TICKERS + GLOBAL_TICKERS + FX_TICKER
 
-combined_data_list = IndianList + GlobalList + USDRATEList 
-
-all_data = yf.download(combined_data_list, period="10y")['Close']
+log.info("Downloading 10-year close data for %d tickers", len(all_tickers))
+all_data = yf.download(all_tickers, period="10y")["Close"]
 data = all_data.ffill().dropna()
 
+for ticker in INDIAN_TICKERS:
+    data[f"{ticker}_USD"] = data[ticker] / data["INR=X"]
 
-for ticker in IndianList:
-    data[f'{ticker}_USD'] = data[ticker] / data['INR=X']
-
-
-columns_to_keep = GlobalList + [f'{ticker}_USD' for ticker in IndianList]
+columns_to_keep = GLOBAL_TICKERS + [f"{t}_USD" for t in INDIAN_TICKERS]
 clean_df = data[columns_to_keep].copy()
 
 log_returns = np.log(clean_df / clean_df.shift(1)).dropna()
-
 log_returns.to_csv("market_log_returns.csv")
-
-# plt.figure(figsize=(12, 6))
-# plt.plot(log_returns)
-
-# plt.title('Historical Data')
-# plt.xlabel('Date')
-# plt.ylabel('Price')
-
-# plt.legend(log_returns.columns)
-# plt.show()
-
-
-
-
-
+log.info("Saved %d rows of log returns to market_log_returns.csv", len(log_returns))
