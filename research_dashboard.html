@@ -265,9 +265,9 @@ function beep(freq,dur){const o=audioCtx.createOscillator(),g=audioCtx.createGai
 function tickSound(){beep(800,0.08)}
 function doneSound(){beep(523,0.1);setTimeout(()=>beep(659,0.1),120);setTimeout(()=>beep(784,0.15),240)}
 
-function pct(v,d=2){return v==null?'—':(v>=0?'+':'')+v.toFixed(d)+'%'}
+function pct(v,d=2){return v==null?'—':v.toFixed(d)+'%'}
 function usd(v){return v==null?'—':new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(v)}
-function fmt2(v){return v==null?'—':(v>=0?'+':'')+v.toFixed(2)}
+function fmt2(v){return v==null?'—':v.toFixed(2)}
 function setF(id,val){const e=document.getElementById(id);if(e)e.textContent=val}
 function setDelta(id,val){const e=document.getElementById(id);if(!e)return;e.textContent=val==null?'—':(val>=0?'+':'')+val.toFixed(6);e.className=val==null?'':(val>=0?'delta-pos':'delta-neg')}
 
