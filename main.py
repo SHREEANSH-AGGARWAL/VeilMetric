@@ -54,7 +54,7 @@ for agent in ["return", "drawdown", "volatility"]:
         except Exception as e:
             log.warning("FHE vault %s failed to load: %s", agent, e)
 
-# Feature order MUST match training column order
+# Feature order must match training column order
 WEIGHT_KEYS = ["Gold", "Silver", "Bitcoin", "Ethereum", "Nifty", "Nippon"]
 
 
@@ -72,10 +72,7 @@ class PortfolioRequest(BaseModel):
 def compute_analytics(ret: float, drawdown: float, vol: float,
                        context_momentum: float, context_vol: float,
                        wealth: float) -> dict:
-    """
-    Compute all derived portfolio analytics entirely from model outputs.
-    No hardcoded predicted values — every number flows from ret/drawdown/vol.
-    """
+    """Derive portfolio analytics from model-predicted return, drawdown, and volatility."""
     RISK_FREE_4YR    = 0.16   # 4 % annual × 4 years
     RISK_FREE_ANNUAL = 0.04
 
@@ -84,7 +81,7 @@ def compute_analytics(ret: float, drawdown: float, vol: float,
 
     # ── Jensen's Alpha (CAPM) ───────────────────
     expected_capm   = RISK_FREE_4YR + beta * (context_momentum - RISK_FREE_4YR)
-    jensens_alpha   = ret - expected_capm          # fraction → returned as %
+    jensens_alpha   = ret - expected_capm
 
     # ── Sharpe Ratio (annualised) ───────────────
     annual_ret = (1 + max(ret, -0.9999)) ** (1.0 / 4.0) - 1
@@ -110,17 +107,17 @@ def compute_analytics(ret: float, drawdown: float, vol: float,
     max_drawdown_usd  = wealth * drawdown
 
     return {
-        "jensens_alpha":     round(jensens_alpha * 100, 4),  # %
+        "jensens_alpha":     round(jensens_alpha * 100, 4),
         "sharpe_ratio":      round(sharpe, 4),
         "calmar_ratio":      round(calmar, 4),
-        "cvar_proxy":        round(cvar_proxy * 100, 4),     # %
+        "cvar_proxy":        round(cvar_proxy * 100, 4),
         "risk_reward":       round(risk_reward, 4),
         "safety_score":      round(safety_score, 4),
         "upside_capture":    round(upside_capture, 4),
         "wealth_projection": round(wealth_projection, 2),
         "max_drawdown_usd":  round(max_drawdown_usd, 2),
         "beta":              round(beta, 4),
-        "annual_return":     round(annual_ret * 100, 4),     # %
+        "annual_return":     round(annual_ret * 100, 4),
     }
 
 
@@ -146,7 +143,7 @@ async def health():
 
 @app.get("/api/context")
 async def get_market_context():
-    """Return live Nifty 50 market context (used by UI on load)."""
+    """Return live Nifty 50 market context for the frontend."""
     try:
         from Moving_Window_Converter import get_live_market_context
         momentum, vol = get_live_market_context()
