@@ -140,7 +140,7 @@ The dashboard will be available at **http://localhost:8000**.
 ### Docker (alternative)
 
 ```bash
-# Build and run (pre-trained models must already exist in the repo)
+# Build and run 
 docker build -t veilmetric .
 docker run -p 8000:8000 veilmetric
 ```
@@ -163,7 +163,7 @@ Returns loaded engine status.
 ```
 
 ### `GET /api/context`
-Returns live Nifty 50 market context (momentum + volatility).
+Returns live Nifty market context (momentum + volatility).
 
 ### `POST /api/predict/benchmark`
 Runs dual-engine inference and returns full analytics.
@@ -210,7 +210,6 @@ The research dashboard provides:
 - **Dual-engine comparison table** — raw predictions from both engines with accuracy deltas
 - **8 analytics cards** — Jensen's Alpha, Sharpe, Calmar, CVaR, Wealth Projection, Max Drawdown (USD), Upside Capture, Expected Return
 - **4 interactive charts** — Radar (risk profile), Bar (FHE deltas), Donut (allocation), Line (48-month wealth trajectory)
-- **Animated loading overlay** — step-by-step progress with audio feedback
 - **Explanatory modal** — plain-English descriptions of every metric for non-technical users
 
 ---
